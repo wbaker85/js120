@@ -1,163 +1,78 @@
-/*
-TTT is a game played by two players.
-One player is a human, one player is a computer.
-Each player takes alternating turns.
-On a given player's turn, they choose a spot on the board to mark with their mark (an X or an O).
-The board is a 3x3 grid of possible options to place a mark.  Only 1 mark can go in a spot.
-Once a player finishes a row with all of their mark, they win.
-A row consists of 3 across, 3 down, or 3 diagonal.
-If the board fills up without a winner, the game ends in a tie.
-
-
-Main:
-  Make a game
-  Run a turn of that game
-  If the game is over, show the result
-  Otherwise run another turn
-
-Game (n)
-  Has:
-    A board
-    2 Players
-    Outcome
-
-  Run a turn (v)
-  Check for an outcome (v)
-  Show the outcome (v)
-
-Player (n)
-  Has:
-    selectedMark
-    turnOrder
-    selectedSpot
-
-  Do my turn (v) => doMyTurn()
-  Chose a spot (v)
-  Chose mark (v)
-  Chose turn order (v)
-
-  Sub-Types:
-    Human (n)
-    Computer (n)
-
-Board (n)
-  Has:
-    horizontal rows
-    veritical rows
-    diagonal rows
-
-  See if there is a winner (v) => gameIsOver();
-  Evaluate Winner (v) => getWinner();
-  Show the Board (v)
-  Show choices (v)
-
-Row (n)
-  Has: Spots
-
-  Check for a winner (v)
-  Get the winner (v)
-
-Spot (n)
-  Has:
-    current value
-    index position (1 through 9)
-
-  Mark a Spot (v)
-  Show current value (v)
-
-*/
 let readline = require('readline-Sync');
+let clear = require('clear');
 
-const EMPTY_MARK = '-';
-const HUMAN_MARK = 'X';
-const COMPUTER_MARK = 'O';
-const WINNING_INDICES = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9],
-  [1, 4, 7],
-  [2, 5, 8],
-  [3, 6, 9],
-  [1, 5, 9],
-  [7, 5, 3],
-];
+class Spot {
+  constructor(emptyMark) {
+    this.value = emptyMark;
+  }
+
+  mark(aMark) {
+    this.value = aMark;
+  }
+
+  getValue() {
+    return this.value;
+  }
+}
 
 class Board {
-  constructor() {
+  constructor(emptyMark) {
+    this.emptyMark = emptyMark;
     this.spots = {};
     this.initBoard();
-    this.rows = [];
+    this.winner = null;
   }
+
+  static EMPTY_MARK = '-';
 
   initBoard() {
     for (let idx = 1; idx <= 9; idx += 1) {
-      this.spots[idx] = EMPTY_MARK;
+      this.spots[idx] = new Spot(this.emptyMark);
     }
   }
 
-  updateRows() {
-    this.rows = WINNING_INDICES.map((row) => {
-      return row.map((spotNumber) => {
-        return this.spots[spotNumber];
-      });
+  isFull() {
+    return Object.values(this.spots).every((spotObj) => {
+      return spotObj.value !== this.emptyMark;
     });
-  }
-
-  getWinner() {
-    this.updateRows();
-
-    let winner = null;
-
-    if (Object.values(this.spots).every((mark) => mark !== EMPTY_MARK)) {
-      winner = 'tie';
-    }
-
-    this.rows.forEach((row) => {
-      if ((new Set(row)).size === 1 && !(row.includes(EMPTY_MARK))) {
-        winner = row[0] === HUMAN_MARK ? 'human' : 'computer';
-      }
-    });
-
-    return winner;
   }
 
   showBoard() {
-    console.log(`${this.spots[1]} | ${this.spots[2]} | ${this.spots[3]}`);
-    console.log(`${this.spots[4]} | ${this.spots[5]} | ${this.spots[6]}`);
-    console.log(`${this.spots[7]} | ${this.spots[8]} | ${this.spots[9]}`);
+    console.log(`${this.spots[1].value} | ${this.spots[2].value} | ${this.spots[3].value}`);
+    console.log(`${this.spots[4].value} | ${this.spots[5].value} | ${this.spots[6].value}`);
+    console.log(`${this.spots[7].value} | ${this.spots[8].value} | ${this.spots[9].value}`);
+  }
+
+  getChoices() {
+    return Object.entries(this.spots)
+            .filter((spot) => spot[1].value === this.emptyMark)
+            .map((spot) => spot[0]);
   }
 
   showChoices() {
     console.log(this.getChoices().join(', '));
   }
 
-  getChoices() {
-    return Object.entries(this.spots)
-            .filter((spot) => spot[1] === EMPTY_MARK)
-            .map((spot) => spot[0]);
-  }
 }
 
 class Player {
-  markBoard(spotIdx) {
-    this.myBoard.spots[spotIdx] = this.myMark;
-  }
-}
-
-class HumanPlayer extends Player {
-  constructor() {
-    super();
+  constructor(mark) {
+    this.myMark = mark;
     this.myBoard = null;
-    this.myMark = HUMAN_MARK;
   }
 
   doMyTurn(board) {
     this.myBoard = board;
-    this.myBoard.showBoard();
+    if (this instanceof HumanPlayer) {
+      clear();
+      this.myBoard.showBoard();
+    }
     let spotIdx = this.pickSpot();
-    this.markBoard(spotIdx);
+    this.myBoard.spots[spotIdx].mark(this.myMark);
   }
+}
 
+class HumanPlayer extends Player {
   pickSpot() {
     let choice;
 
@@ -172,18 +87,6 @@ class HumanPlayer extends Player {
 }
 
 class ComputerPlayer extends Player {
-  constructor() {
-    super();
-    this.myBoard = null;
-    this.myMark = COMPUTER_MARK;
-  }
-
-  doMyTurn(board) {
-    this.myBoard = board;
-    let spotIdx = this.pickSpot();
-    this.markBoard(spotIdx);
-  }
-
   pickSpot() {
     let choices = this.myBoard.getChoices();
     return choices[Math.floor(Math.random() * choices.length)];
@@ -192,9 +95,48 @@ class ComputerPlayer extends Player {
 
 class Game {
   constructor() {
-    this.board = new Board();
-    this.players = [new HumanPlayer(), new ComputerPlayer()];
+    this.marks = Game.MARKER_OPTIONS;
+    this.players = [
+      new HumanPlayer(this.humanMarkChoice()),
+      new ComputerPlayer(this.computerMarkChoice())
+    ];
+    this.humanMark = this.players[0].myMark;
+    this.board = new Board(Game.EMPTY_MARK);
     this.outcome = null;
+  }
+
+  static MARKER_OPTIONS = ['X', 'O'];
+
+  static EMPTY_MARK = '-';
+
+  static WINNING_INDICES = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9],
+    [1, 4, 7],
+    [2, 5, 8],
+    [3, 6, 9],
+    [1, 5, 9],
+    [7, 5, 3],
+  ];
+
+  updateRows() {
+    this.rows = Game.WINNING_INDICES.map((row) => {
+      return row.map((spotNumber) => {
+        return this.board.spots[spotNumber].value;
+      });
+    });
+  }
+
+  humanMarkChoice() {
+    console.log('Choose a marker [enter 0 or 1]');
+    let choice = readline.prompt();
+    return this.marks.splice(Number(choice), 1)[0];
+  }
+
+  computerMarkChoice() {
+    let choice = Math.floor(Math.random() * this.marks.length);
+    return this.marks.splice(Number(choice), 1)[0];
   }
 
   playTurn() {
@@ -204,16 +146,46 @@ class Game {
   }
 
   updateOutcome() {
-    this.outcome = this.board.getWinner();
+    if (this.gameHasWinner()) {
+      this.outcome = this.gameWinner();
+    } else if (this.board.isFull()) {
+      this.outcome = 'tie';
+    }
   }
 
   showOutcome() {
-    console.log(this.outcome);
+    clear();
     this.board.showBoard();
+    if (this.outcome === this.humanMark) {
+      console.log('Human won!');
+    } else if (this.outcome === 'tie') {
+      console.log('It was a tie!');
+    } else {
+      console.log('Computer won!');
+    }
   }
+
+  gameHasWinner() {
+    return Game.WINNING_INDICES.some((spotList) => {
+      let theseMarks = spotList.map((num) => this.board.spots[num].getValue());
+      let vals = new Set(theseMarks);
+      let hasEmpties = vals.has(Game.EMPTY_MARK);
+      return vals.size === 1 && !hasEmpties;
+    });
+  }
+
+  gameWinner() {
+    return Game.WINNING_INDICES
+            .map((rowNums) => rowNums.map((num) =>
+              this.board.spots[num].getValue())
+            )
+            .filter((rowVals) => !rowVals.includes(Game.EMPTY_MARK))
+            .filter((rowVals) => (new Set(rowVals)).size === 1)[0][0];
+  }
+
 }
 
-class Main {
+class TTTEngine {
   constructor() {
     this.game = new Game();
   }
@@ -227,4 +199,4 @@ class Main {
   }
 }
 
-(new Main()).play();
+(new TTTEngine()).play();
