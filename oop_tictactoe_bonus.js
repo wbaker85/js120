@@ -1,21 +1,3 @@
-/*
-Notes:
-  For joinOr - pretty much implemented it the same as the given solution.  Can you make it a normal funciton outside of any class?
-  For play again - i have it creating a new board every game, instead of there being a board reset option
-  For defensive computer move - the method given in the possible solution seems to be doing two things:
-    Determining if there is a deensive computer move that needs to be made - if there's not, it returns null
-    As well as determining choice to be made
-    I split up this logic into a few different methods
-    Gave the methods "opponent" as a parameter so that they could be extended in the future if desired
-  Middle square: Made the isMiddleOpen stuff a method of board, as well as the key for the middle square
-
-  TTTGame class in general seems really big..?
-
-
-
-
-*/
-
 let readline = require("readline-sync");
 let clear = require("clear");
 
@@ -162,6 +144,7 @@ class TTTGame {
   constructor() {
     this.board = null;
     this.score = {human: 0, computer: 0};
+    this.turnOrder = [this.humanMoves, this.computerMoves];
     this.playToWins = 3;
     this.human = new Human();
     this.computer = new Computer();
@@ -173,7 +156,9 @@ class TTTGame {
 
     do {
       this.board = new Board();
-      this.playOneGame();
+      this.playOneGame(this.turnOrder);
+      [this.turnOrder[0], this.turnOrder[1]] =
+        [this.turnOrder[1], this.turnOrder[0]];
     } while (!this.matchOver() && this.playAgain());
 
     if (this.matchOver()) this.displayMatchOverMessage();
@@ -212,16 +197,13 @@ class TTTGame {
     }
   }
 
-  playOneGame() {
+  playOneGame(turns) {
+    let theseTurns = turns.slice();
     this.board.display();
     while (true) {
-      this.humanMoves();
+      this.playOneTurn(theseTurns[0]);
       if (this.gameOver()) break;
-
-      this.computerMoves();
-      if (this.gameOver()) break;
-
-      this.board.displayWithClear();
+      [theseTurns[0], theseTurns[1]] = [theseTurns[1], theseTurns[0]];
     }
 
     this.board.displayWithClear();
@@ -230,6 +212,10 @@ class TTTGame {
     this.updateScore();
     this.displayScore();
     console.log();
+  }
+
+  playOneTurn(moveFunc) {
+    moveFunc.call(this);
   }
 
   displayScore() {
@@ -257,6 +243,8 @@ class TTTGame {
   }
 
   humanMoves() {
+    this.board.displayWithClear();
+
     let choice;
 
     while (true) {
