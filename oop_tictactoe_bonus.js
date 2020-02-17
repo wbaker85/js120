@@ -7,8 +7,9 @@ Notes:
     As well as determining choice to be made
     I split up this logic into a few different methods
     Gave the methods "opponent" as a parameter so that they could be extended in the future if desired
+  Middle square: Made the isMiddleOpen stuff a method of board, as well as the key for the middle square
 
-
+  TTTGame class in general seems really big..?
 
 
 
@@ -160,19 +161,33 @@ class TTTGame {
 
   constructor() {
     this.board = null;
+    this.score = {human: 0, computer: 0};
+    this.playToWins = 3;
     this.human = new Human();
     this.computer = new Computer();
   }
 
   play() {
     this.displayWelcomeMessage();
+    console.log(`First to ${this.playToWins} wins the match.`);
 
     do {
       this.board = new Board();
       this.playOneGame();
-    } while (this.playAgain());
+    } while (!this.matchOver() && this.playAgain());
+
+    if (this.matchOver()) this.displayMatchOverMessage();
 
     this.displayGoodbyeMessage();
+  }
+
+  displayMatchOverMessage() {
+    if (this.getMatchWinner() === 'human') {
+      console.log('You were the first to win 3 games, and won the match!');
+    } else {
+      console.log('The computer won 3 games first...you lost!');
+    }
+    console.log();
   }
 
   playAgain() {
@@ -183,6 +198,18 @@ class TTTGame {
       input = readline.prompt();
     }
     return input.toLowerCase() === 'y';
+  }
+
+  getMatchWinner() {
+    return this.score.human > this.score.computer ? 'human' : 'computer';
+  }
+
+  updateScore() {
+    if (this.isWinner(this.human)) {
+      this.score.human += 1;
+    } else if (this.isWinner(this.computer)) {
+      this.score.computer += 1;
+    }
   }
 
   playOneGame() {
@@ -199,6 +226,14 @@ class TTTGame {
 
     this.board.displayWithClear();
     this.displayResults();
+    console.log();
+    this.updateScore();
+    this.displayScore();
+    console.log();
+  }
+
+  displayScore() {
+    console.log(`--> Current score is Human: ${this.score.human}, Computer: ${this.score.computer} <--`);
   }
 
   displayWelcomeMessage() {
@@ -237,10 +272,6 @@ class TTTGame {
 
     this.board.markSquareAt(choice, this.human.getMarker());
   }
-
-  //
-  // beginning of computer AI stuff
-  //
 
   randomUnusedSquare() {
     let validChoices = this.board.unusedSquares();
@@ -286,8 +317,6 @@ class TTTGame {
   computerMoves() {
     let choice;
 
-    readline.question(`Middle board status: ${this.board.middleIsOpen()}`);
-
     if (this.winningConditionExists(this.computer)) {
       choice = this.choiceToBlockOrWin(this.computer);
     } else if (this.winningConditionExists(this.human)) {
@@ -301,12 +330,14 @@ class TTTGame {
     this.board.markSquareAt(choice, this.computer.getMarker());
   }
 
-  //
-  // End of computer AI stuff
-  //
-
   gameOver() {
     return this.board.isFull() || this.someoneWon();
+  }
+
+  matchOver() {
+    return Object.values(this.score).some((winNum) => {
+      return winNum >= this.playToWins;
+    });
   }
 
   someoneWon() {
