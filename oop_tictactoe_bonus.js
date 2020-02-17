@@ -2,8 +2,11 @@
 Notes:
   For joinOr - pretty much implemented it the same as the given solution.  Can you make it a normal funciton outside of any class?
   For play again - i have it creating a new board every game, instead of there being a board reset option
-
-
+  For defensive computer move - the method given in the possible solution seems to be doing two things:
+    Determining if there is a deensive computer move that needs to be made - if there's not, it returns null
+    As well as determining choice to be made
+    I split up this logic into a few different methods
+    Gave the methods "opponent" as a parameter so that they could be extended in the future if desired
 
 
 
@@ -245,32 +248,32 @@ class TTTGame {
     return choice;
   }
 
-  immediateThreatExists(opponent) {
+  winningConditionExists(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.some((row) => {
-      return this.rowIsThreatening(row, opponent);
+      return this.rowHasWinningCondition(row, player);
     });
   }
 
-  rowIsThreatening(row, opponent) {
-    return this.board.countMarkersFor(opponent, row) === 2
+  rowHasWinningCondition(row, player) {
+    return this.board.countMarkersFor(player, row) === 2
            && row.some((key) => this.board.squares[key].isUnused());
   }
 
-  listOfThreateningRows(opponent) {
+  listOfWinningRows(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.filter((row) => {
-      return this.rowIsThreatening(row, opponent);
+      return this.rowHasWinningCondition(row, player);
     });
   }
 
   randomRowFromList(list) {
-    return list[Math.floor(Math.random() * list.length)]
+    return list[Math.floor(Math.random() * list.length)];
   }
 
-  choiceToBlockOpponentVictory(opponent) {
-    let threateningRows = this.listOfThreateningRows(opponent);
-    let randomThreateningRow = this.randomRowFromList(threateningRows);
+  choiceToBlockOrWin(player) {
+    let winningRows = this.listOfWinningRows(player);
+    let randomWinningRow = this.randomRowFromList(winningRows);
 
-    return randomThreateningRow.find((choice) => {
+    return randomWinningRow.find((choice) => {
       return this.board.squares[choice].isUnused();
     });
   }
@@ -278,8 +281,10 @@ class TTTGame {
   computerMoves() {
     let choice;
 
-    if (this.immediateThreatExists(this.human)) {
-      choice = this.choiceToBlockOpponentVictory(this.human);
+    if (this.winningConditionExists(this.computer)) {
+      choice = this.choiceToBlockOrWin(this.computer);
+    } else if (this.winningConditionExists(this.human)) {
+      choice = this.choiceToBlockOrWin(this.human);
     } else {
       choice = this.randomUnusedSquare();
     }
