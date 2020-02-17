@@ -1,3 +1,17 @@
+/*
+Notes:
+  For joinOr - pretty much implemented it the same as the given solution.  Can you make it a normal funciton outside of any class?
+  For play again - i have it creating a new board every game, instead of there being a board reset option
+
+
+
+
+
+
+
+
+*/
+
 let readline = require("readline-sync");
 let clear = require("clear");
 
@@ -132,8 +146,12 @@ class TTTGame {
     return outputString;
   }
 
+  static validYorN(input) {
+    return input.match(/^[yn]$/i);
+  }
+
   constructor() {
-    this.board = new Board();
+    this.board = null;
     this.human = new Human();
     this.computer = new Computer();
   }
@@ -141,6 +159,25 @@ class TTTGame {
   play() {
     this.displayWelcomeMessage();
 
+    do {
+      this.board = new Board();
+      this.playOneGame();
+    } while (this.playAgain());
+
+    this.displayGoodbyeMessage();
+  }
+
+  playAgain() {
+    console.log('Do you want to play again?  Enter Y or N.');
+    let input = readline.prompt();
+    while (!TTTGame.validYorN(input)) {
+      console.log('Invalid input!  Enter Y to play again, N to quit.');
+      input = readline.prompt();
+    }
+    return input.toLowerCase() === 'y';
+  }
+
+  playOneGame() {
     this.board.display();
     while (true) {
       this.humanMoves();
@@ -154,7 +191,6 @@ class TTTGame {
 
     this.board.displayWithClear();
     this.displayResults();
-    this.displayGoodbyeMessage();
   }
 
   displayWelcomeMessage() {
@@ -194,7 +230,11 @@ class TTTGame {
     this.board.markSquareAt(choice, this.human.getMarker());
   }
 
-  computerMoves() {
+  //
+  // beginning of computer AI stuff
+  //
+
+  randomUnusedSquare() {
     let validChoices = this.board.unusedSquares();
     let choice;
 
@@ -202,8 +242,54 @@ class TTTGame {
       choice = Math.floor((9 * Math.random()) + 1).toString();
     } while (!validChoices.includes(choice));
 
+    return choice;
+  }
+
+  immediateThreatExists(opponent) {
+    return TTTGame.POSSIBLE_WINNING_ROWS.some((row) => {
+      return this.rowIsThreatening(row, opponent);
+    });
+  }
+
+  rowIsThreatening(row, opponent) {
+    return this.board.countMarkersFor(opponent, row) === 2
+           && row.some((key) => this.board.squares[key].isUnused());
+  }
+
+  listOfThreateningRows(opponent) {
+    return TTTGame.POSSIBLE_WINNING_ROWS.filter((row) => {
+      return this.rowIsThreatening(row, opponent);
+    });
+  }
+
+  randomRowFromList(list) {
+    return list[Math.floor(Math.random() * list.length)]
+  }
+
+  choiceToBlockOpponentVictory(opponent) {
+    let threateningRows = this.listOfThreateningRows(opponent);
+    let randomThreateningRow = this.randomRowFromList(threateningRows);
+
+    return randomThreateningRow.find((choice) => {
+      return this.board.squares[choice].isUnused();
+    });
+  }
+
+  computerMoves() {
+    let choice;
+
+    if (this.immediateThreatExists(this.human)) {
+      choice = this.choiceToBlockOpponentVictory(this.human);
+    } else {
+      choice = this.randomUnusedSquare();
+    }
+
     this.board.markSquareAt(choice, this.computer.getMarker());
   }
+
+  //
+  // End of computer AI stuff
+  //
 
   gameOver() {
     return this.board.isFull() || this.someoneWon();
