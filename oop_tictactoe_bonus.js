@@ -47,6 +47,7 @@ class Square {
 class Board {
   constructor() {
     this.squares = {};
+    this.middleSquareKey = '5';
     for (let counter = 1; counter <= 9; ++counter) {
       this.squares[String(counter)] = new Square();
     }
@@ -74,6 +75,10 @@ class Board {
 
   isFull() {
     return this.unusedSquares().length === 0;
+  }
+
+  middleIsOpen() {
+    return this.squares[this.middleSquareKey].isUnused();
   }
 
   unusedSquares() {
@@ -281,10 +286,14 @@ class TTTGame {
   computerMoves() {
     let choice;
 
+    readline.question(`Middle board status: ${this.board.middleIsOpen()}`);
+
     if (this.winningConditionExists(this.computer)) {
       choice = this.choiceToBlockOrWin(this.computer);
     } else if (this.winningConditionExists(this.human)) {
       choice = this.choiceToBlockOrWin(this.human);
+    } else if (this.board.middleIsOpen()) {
+      choice = this.board.middleSquareKey;
     } else {
       choice = this.randomUnusedSquare();
     }
