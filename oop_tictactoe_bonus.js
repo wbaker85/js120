@@ -1,5 +1,4 @@
 let readline = require("readline-sync");
-let clear = require("clear");
 
 class Square {
   static UNUSED_SQUARE = " ";
@@ -78,7 +77,7 @@ class Board {
   }
 
   displayWithClear() {
-    clear();
+    console.clear();
     console.log("");
     console.log("");
     this.display();
@@ -153,6 +152,7 @@ class TTTGame {
   play() {
     this.displayWelcomeMessage();
     console.log(`First to ${this.playToWins} wins the match.`);
+    readline.question('Press enter to begin.');
 
     do {
       this.board = new Board();
@@ -223,7 +223,7 @@ class TTTGame {
   }
 
   displayWelcomeMessage() {
-    clear();
+    console.clear();
     console.log("Welcome to Tic Tac Toe!");
     console.log("");
   }
