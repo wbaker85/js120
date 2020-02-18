@@ -2,7 +2,7 @@ let readline = require('readline-sync');
 
 class Card {
   constructor(type) {
-    this.type = type; // ['J', 'Clubs']
+    this.type = type;
   }
 
   value() {
@@ -43,15 +43,21 @@ class Deck {
 }
 
 class Participant {
-  constructor(deck) {
-    this.deck = deck;
-    this.hand = [this.deck.dealCard(), this.deck.dealCard()];
+  constructor() {
+    this.hand = null;
     this.busted = false;
     this.handValue = 0;
   }
 
-  hit() {
-    this.hand.push(this.deck.dealCard());
+  dealHand(...cards) {
+    this.hand = [];
+    cards.forEach((card) => this.hit(card));
+  }
+
+  hit(card) {
+    this.hand.push(card);
+    this.updateHandValue();
+    this.updateBusted();
   }
 
   updateBusted() {
@@ -78,18 +84,50 @@ class Participant {
 }
 
 class Player extends Participant {
-  showHand() {
-    console.log(`Player cards: ${this.handString()}`);
+  constructor() {
+    super();
+    this.moneyLeft = 5;
   }
 
-  validChoice(choice) {
+  static moneyHighLimit = 10;
+  static moneyLowLimit = 0;
+
+  static validChoice(choice) {
     return !!choice.match(/^[hs]$/i);
+  }
+
+  deductMoney() {
+    this.moneyLeft -= 1;
+  }
+
+  addMoney() {
+    this.moneyLeft += 1;
+  }
+
+  moneyOutOfRange() {
+    return (this.moneyLeft <= Player.moneyLowLimit
+            || this.moneyLeft >= Player.moneyHighLimit);
+  }
+
+  showMoneyLeft() {
+    let dollarWord = 'dollars';
+
+    if (this.moneyLeft === 1) {
+      dollarWord = 'dollar';
+    }
+
+    console.log(`You have ${this.moneyLeft} ${dollarWord} left.`);
+
+  }
+
+  showHand() {
+    console.log(`Player cards: ${this.handString()}`);
   }
 
   chooseHitOrStay() {
     console.log('[H]it or [S]tay?  H to hit, S to stay,');
     let choice = readline.prompt();
-    while (!this.validChoice(choice)) {
+    while (!Player.validChoice(choice)) {
       console.log('Invalid entry!  Enter H to hit, S to stay');
       choice = readline.prompt();
     }
@@ -109,13 +147,56 @@ class Dealer extends Participant {
 
 class TwentyOneGame {
   constructor() {
-    this.deck = new Deck();
-    this.player = new Player(this.deck);
-    this.dealer = new Dealer(this.deck);
+    this.deck = null;
+    this.player = new Player();
+    this.dealer = new Dealer();
     this.winner = null;
   }
 
+  static validYorN(input) {
+    return !!input.match(/^[yn]$/i);
+  }
+
+  static playAgain() {
+    console.log();
+    console.log('Play again?  Enter Y to play again, N to quit.');
+    let choice = readline.question();
+    while (!TwentyOneGame.validYorN(choice)) {
+      console.log('Invalid input!  Enter Y to play again, N to quit.');
+      choice = readline.question();
+    }
+    return choice.toLowerCase() === 'y';
+  }
+
+  resetCards() {
+    this.deck = new Deck();
+    this.player.dealHand(this.deck.dealCard(), this.deck.dealCard());
+    this.dealer.dealHand(this.deck.dealCard(), this.deck.dealCard());
+  }
+
   playGame() {
+    this.showWelcome();
+
+    do {
+      this.playOneGame();
+
+      if (this.winner === 'player') {
+        this.player.addMoney();
+      } else if (this.winner === 'dealer') {
+        this.player.deductMoney();
+      }
+
+      console.log();
+      this.player.showMoneyLeft();
+
+    } while (!this.player.moneyOutOfRange() && TwentyOneGame.playAgain());
+
+    this.showGoodbye();
+  }
+
+  playOneGame() {
+    this.resetCards();
+
     while (true) {
       this.playerTurn();
       if (this.player.busted) break;
@@ -130,22 +211,50 @@ class TwentyOneGame {
     this.showResult();
   }
 
+  showWelcome() {
+    console.clear();
+    console.log('--> Welcome to Twenty-One <--');
+    console.log('You start with 5 dollars.  You gain a dollar for winning, and lose a dollar for losing.');
+    console.log('The game ends when you run out of money, get to 10 dollars, or decide not to keep playing.');
+    console.log('>> Press enter to start the game.');
+    readline.question();
+  }
+
+  showMoneyMessage() {
+    if (this.player.moneyLeft <= Player.moneyLowLimit) {
+      console.log('You ran out of money!  Game over.');
+    } else {
+      console.log('You got too much money!  Game over.');
+    }
+  }
+
+  showGoodbye() {
+    console.log();
+    if (this.player.moneyOutOfRange()) {
+      this.showMoneyMessage();
+    } else {
+      console.log('Goodbye!');
+    }
+  }
+
+  showPlayerTurnInfo() {
+    console.clear();
+    console.log(`Money left: ${this.player.moneyLeft} dollar(s)`);
+    console.log();
+    this.dealer.showOneCard();
+    this.player.showHand();
+  }
+
   playerTurn() {
     let playerChoice;
 
     do {
-      console.clear();
-      this.dealer.showOneCard();
-      this.player.showHand();
-
+      this.showPlayerTurnInfo();
       playerChoice = this.player.chooseHitOrStay();
 
       if (playerChoice === 'h') {
-        this.player.hit();
+        this.player.hit(this.deck.dealCard());
       }
-
-      this.player.updateHandValue();
-      this.player.updateBusted();
 
     } while (!(playerChoice === 's' || this.player.busted));
 
@@ -158,9 +267,7 @@ class TwentyOneGame {
 
   dealerTurn() {
     while (this.dealer.handValue < 17) {
-      this.dealer.hit();
-      this.dealer.updateHandValue();
-      this.dealer.updateBusted();
+      this.dealer.hit(this.deck.dealCard());
     }
 
     if (this.dealer.busted) {
@@ -172,8 +279,7 @@ class TwentyOneGame {
 
   showResult() {
     console.log();
-    console.log('Final hands:');
-    console.log();
+    console.log('--> Final hands <--');
     this.player.showHand();
     this.dealer.showHand();
     console.log();
