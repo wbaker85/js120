@@ -5,7 +5,7 @@ class Vehicle {
   }
 
   info() {
-    return `${this.make} ${this.model}`
+    return `${this.make} ${this.model}`;
   }
 
   getWheels() {
