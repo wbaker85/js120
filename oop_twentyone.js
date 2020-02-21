@@ -218,11 +218,8 @@ class TwentyOne extends CardGame {
       this.updateHandValue(participant);
       this.showTurnInfo();
 
-      if (participant.hasOwnProperty('cardsHidden')) {
+      if (participant instanceof Dealer) {
         readline.question('Press enter to continue...');
-      }
-
-      if (participant.hasOwnProperty('cardsHidden')) {
         choice = this.dealerChooseHitOrStay();
       } else {
         choice = this.playerChooseHitOrStay();
