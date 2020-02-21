@@ -113,13 +113,9 @@ class CardGame {
       this.playOneGame();
       this.showGameResult();
 
-    } while (!this.gamesOver() && CardGame.playAgain());
+    } while (!this.gamesAreOver() && CardGame.playAgain());
 
     this.showGoodbye();
-  }
-
-  gamesOver() {
-    return this.moneyOutOfRange();
   }
 }
 
@@ -140,8 +136,6 @@ class TwentyOne extends CardGame {
     super(2);
     this.playerBusted = false;
     this.dealerBusted = false;
-    this.player.handValue = 0;
-    this.dealer.handValue = 0;
     this.playerMoneyLeft = TwentyOne.STARTING_MONEY;
   }
 
@@ -166,13 +160,13 @@ class TwentyOne extends CardGame {
 
       this.updateWinnerFromHandValues();
     }
-    this.updateHandValue(this.dealer);
+    this.handValue(this.dealer);
     this.updatePlayerMoneyFromResult();
   }
 
-  moneyOutOfRange() {
+  gamesAreOver() {
     return (this.playerMoneyLeft <= TwentyOne.MONEY_LOW_LIMIT
-            || this.playerMoneyLeft >= TwentyOne.MONEY_HIGH_LIMIT);
+      || this.playerMoneyLeft >= TwentyOne.MONEY_HIGH_LIMIT);
   }
 
   validHitOrStayChoice(choice) {
@@ -190,10 +184,10 @@ class TwentyOne extends CardGame {
   }
 
   dealerChooseHitOrStay() {
-    return this.dealer.handValue < 17 ? 'h' : 's';
+    return this.handValue(this.dealer) < 17 ? 'h' : 's';
   }
 
-  updateHandValue(participant) {
+  handValue(participant) {
     let values = participant.hand.map(TwentyOne.getCardValue);
 
     let handTotal = values.reduce((sum, next) => sum + next);
@@ -204,18 +198,18 @@ class TwentyOne extends CardGame {
       handTotal = values.reduce((sum, next) => sum + next);
     }
 
-    participant.handValue = handTotal;
+    return handTotal;
   }
 
   isBusted(participant) {
-    return participant.handValue > 21;
+    return this.handValue(participant) > 21;
   }
 
   playTurn(participant) {
     let choice;
 
     do {
-      this.updateHandValue(participant);
+      this.handValue(participant);
       this.showTurnInfo();
 
       if (participant instanceof Dealer) {
@@ -227,7 +221,7 @@ class TwentyOne extends CardGame {
 
       if (choice === 'h') {
         participant.addCardToHand(this.deck.dealCard());
-        this.updateHandValue(participant);
+        this.handValue(participant);
       }
 
     } while (!(choice === 's' || this.isBusted(participant)));
@@ -242,9 +236,9 @@ class TwentyOne extends CardGame {
   }
 
   updateWinnerFromHandValues() {
-    if (this.player.handValue > this.dealer.handValue) {
+    if (this.handValue(this.player) > this.handValue(this.dealer)) {
       this.winner = this.player;
-    } else if (this.player.handValue < this.dealer.handValue) {
+    } else if (this.handValue(this.player) < this.handValue(this.dealer)) {
       this.winner = this.dealer;
     } else {
       this.winner = 'tie';
@@ -260,29 +254,20 @@ class TwentyOne extends CardGame {
     readline.question();
   }
 
-  showMoneyResult() {
-    if (this.playerMoneyLeft <= TwentyOne.MONEY_LOW_LIMIT) {
-      console.log('You ran out of money!  Game over.');
-    } else {
-      console.log('You got too much money!  Game over.');
-    }
-  }
-
   showGoodbye() {
-    console.log();
-    if (this.moneyOutOfRange()) {
-      this.showMoneyResult();
+    if (this.playerMoneyLeft <= TwentyOne.MONEY_LOW_LIMIT) {
+      console.log();
+      console.log('You ran out of money!  Game over.');
+    } else if (this.playerMoneyLeft >= TwentyOne.MONEY_HIGH_LIMIT) {
+      console.log();
+      console.log('You got too much money!  Game over.');
     } else {
       console.log('Goodbye!');
     }
   }
 
   showHand(participant) {
-    let prefix = (participant instanceof Dealer)
-                    ? 'Dealer Cards: '
-                    : 'Player Cards: ';
-
-    console.log(`${prefix }${participant.handString()} (${participant.handValue} points)`);
+    console.log(`${participant.constructor.name} cards: ${participant.handString()} (${this.handValue(participant)} points)`);
   }
 
   showOneDealerCard() {
