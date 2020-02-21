@@ -1,35 +1,27 @@
-/*
-Partial function implementation:
-  You bind a function to some number of arguments which is less than the total it has
-  Then when you use the function, you give it the rest of the arguments
+function myFilter(array, func, context = null) {
+  let result = [];
 
+  array.forEach(function(value) {
+    if (func.call(context, value)) {
+      result.push(value);
+    }
+  });
 
-*/
-
-let myBind = function(func, context, ...args) {
-  return function() {
-    return func.call(context, ...args, ...arguments);
-  };
-};
-
-
-function baseFunc(num) {
-  return this.a + this.b + this.c + num;
+  return result;
 }
 
-let obj = {
-  a: 1,
-  b: 2,
-  c: 3,
+let filter = {
+  allowedValues: [5, 6, 9],
 };
 
-let boundFunc = myBind(baseFunc, obj);
-console.log(boundFunc(10)); // => 16
+console.log(
+  myFilter([2, 1, 3, 4, 5, 6, 9, 12], function(val) {
+    return this.allowedValues.indexOf(val) >= 0;
+  }, filter) // returns [5, 6, 9]
+);
 
-
-function addNums(num1, num2) {
-  return num1 + num2;
-}
-
-let addToSeven = myBind(addNums, null, 7);
-console.log(addToSeven(10)); // => 17
+console.log(
+  myFilter([2, 1, 3, 4, 5, 6, 9, 12], function(val) {
+    return [5, 6, 9].indexOf(val) >= 0;
+  }) // returns [5, 6, 9]
+);

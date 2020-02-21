@@ -1,27 +1,19 @@
-function myFilter(array, func, context = null) {
-  let result = [];
+let newStack = function() {
+  let stack = [];
 
-  array.forEach(function(value) {
-    if (func.call(context, value)) {
-      result.push(value);
-    }
-  });
+  return {
+    push(item) {
+      stack.push(item);
+    },
 
-  return result;
-}
+    pop() {
+      return stack.pop();
+    },
 
-let filter = {
-  allowedValues: [5, 6, 9],
+    printStack() {
+      stack.forEach((item) => console.log(item));
+    },
+  };
 };
 
-console.log(
-  myFilter([2, 1, 3, 4, 5, 6, 9, 12], function(val) {
-    return this.allowedValues.indexOf(val) >= 0;
-  }, filter) // returns [5, 6, 9]
-);
-
-console.log(
-  myFilter([2, 1, 3, 4, 5, 6, 9, 12], function(val) {
-    return [5, 6, 9].indexOf(val) >= 0;
-  }) // returns [5, 6, 9]
-);
+let myStack = newStack();

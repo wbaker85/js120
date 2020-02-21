@@ -1,17 +1,19 @@
-function myBind(func, ctx) {
-  return (...someArgs) => {
-    return func.apply(ctx, someArgs);
+let myBind = function(func, context) {
+  return function() {
+    return func.call(context, ...arguments);
   };
+};
+
+function baseFunc(num) {
+  return this.a + this.b + this.c + num;
 }
 
-let myFunc = function(num1, num2, num3) {
-  console.log(num1 + num2 + num3);
-  console.log(this);
+let obj = {
+  a: 1,
+  b: 2,
+  c: 3,
 };
 
-let myObj = {
-  a: 343,
-};
+let boundFunc = myBind(baseFunc, obj);
 
-let newFunc = myBind(myFunc, myObj);
-newFunc(1, 2, 3);
+console.log(boundFunc(10));
