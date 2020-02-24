@@ -1,13 +1,3 @@
-/*
-Input:
-  An Object
-  Name of method on the object - a string
-  Additional arguments to pass on
-
-Output: A reference to the same function
-
-*/
-
 function delegate(obj, methodName, ...args) {
   return function() {
     return obj[methodName](...args);
